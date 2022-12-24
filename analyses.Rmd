@@ -1,0 +1,241 @@
+---
+title: "Larkin Secondary CREP"
+author: "Erin M. Buchanan"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 15)
+```
+
+## Libraries
+
+```{r}
+# library(rio)
+library(lme4)
+library(lmerTest)
+library(MuMIn)
+# library(plyr)
+# library(psych)
+# library(tidyr)
+library(ggplot2)
+library(dplyr)
+# library(ggmosaic)
+# library(MOTE)
+# library(flextable)
+# library(RColorBrewer)
+```
+
+## Import the Data
+
+The `full_long` dataset includes all participants in long format - wherein each trial of their study is on one row of the dataset. This data has been merged with other relevant variables from the ACREP Turri Project found here: https://github.com/doomlab/CREP_Turri 
+
+```{r}
+load("full_long.Rdata")
+```
+
+## Data Screening
+
+- What, if any, rules for exclusion would you like to use? 
+
+[89] "age_exclusion" - Age of majority    
+[90] "previous_exclusion" - Previously participated 
+[92] "studyans_exclusion" - Didn't answer all the questions correctly, or could use when they only get Darrel wrong
+[93] "purpose_exclusion" - Guessed the purpose of the study
+[95] "lang_exclusion" - Said their language wasn't good
+
+```{r}
+DF <- full_long
+```
+
+## Examine Data
+
+```{r}
+table(DF$j_expertise, 
+      DF$vignette, 
+      DF$cond,
+      useNA = "ifany")
+
+# only use darrel
+DF <- DF %>% 
+  filter(vignette == "Darrel") %>% 
+  filter(!is.na(cond)) %>% 
+  filter(!is.na(j_expertise))
+
+# look at table
+table(DF$j_expertise, 
+      DF$cond,
+      useNA = "ifany")
+
+# look at the DVs
+tapply(DF$know_vas, list(DF$j_expertise, DF$cond), mean, na.rm = T)
+tapply(DF$know_vas, list(DF$j_expertise, DF$cond), sd, na.rm = T)
+tapply(DF$know_vas, list(DF$j_expertise, DF$cond), function (x){sum(!is.na(x))})
+
+tapply(DF$luck_vas, list(DF$j_expertise, DF$cond), mean, na.rm = T)
+tapply(DF$luck_vas, list(DF$j_expertise, DF$cond), sd, na.rm = T)
+tapply(DF$luck_vas, list(DF$j_expertise, DF$cond), function (x){sum(!is.na(x))})
+
+# the bin is reversed
+DF$know_bin <- 2 - DF$know_bin
+DF$luck_bin <- 2 - DF$luck_bin
+
+DF %>% 
+  group_by(j_expertise, cond, know_bin) %>% 
+  count()
+
+DF %>% 
+  group_by(j_expertise, cond, luck_bin) %>% 
+  count()
+```
+
+## Knowledge VAS Analysis 
+
+We will control for research lab using a multilevel model. We could also control for language, but lab also accounts for this variable. 
+
+```{r}
+know.model.1 <- lmer(know_vas ~ (1 | person_code),
+                    data = DF, 
+                    na.action = "na.omit")
+
+know.model.2 <- lmer(know_vas ~ (1 | person_code) + cond*j_expertise,
+                    data = DF, 
+                    na.action = "na.omit")
+
+AIC(know.model.1)
+AIC(know.model.2) # lower = good
+
+summary(know.model.2)
+r.squaredGLMM(know.model.2)
+```
+
+```{r}
+ggplot(DF, aes(cond, know_vas, color = j_expertise, fill = j_expertise)) + 
+  stat_summary(fun = mean,
+               geom = "bar",
+               position = "dodge") +
+  stat_summary(fun.data = mean_cl_normal,
+               geom = "errorbar", 
+               position = position_dodge(width = 0.90),
+               width = .2) +
+  xlab("Condition") + 
+  ylab("Knowledge Visual Analog Scale") + 
+  theme_classic() + 
+  scale_fill_discrete(name = "Expertise", labels = c("Naive", "Expert")) + 
+  scale_color_discrete(name = "Expertise", labels = c("Naive", "Expert"))
+```
+
+## Luck VAS Analysis 
+
+```{r}
+luck.model.1 <- lmer(luck_vas ~ (1 | person_code),
+                    data = DF, 
+                    na.action = "na.omit")
+
+luck.model.2 <- lmer(luck_vas ~ (1 | person_code) + cond*j_expertise,
+                    data = DF, 
+                    na.action = "na.omit")
+
+AIC(luck.model.1)
+AIC(luck.model.2) # lower = good
+
+summary(luck.model.2)
+r.squaredGLMM(luck.model.2)
+```
+
+```{r}
+ggplot(DF, aes(cond, luck_vas, color = j_expertise, fill = j_expertise)) + 
+  stat_summary(fun = mean,
+               geom = "bar",
+               position = "dodge") +
+  stat_summary(fun.data = mean_cl_normal,
+               geom = "errorbar", 
+               position = position_dodge(width = 0.90),
+               width = .2) +
+  xlab("Condition") + 
+  ylab("Luck Visual Analog Scale") + 
+  theme_classic() + 
+  scale_fill_discrete(name = "Expertise", labels = c("Naive", "Expert")) + 
+  scale_color_discrete(name = "Expertise", labels = c("Naive", "Expert"))
+```
+
+## Knowledge Bin Analysis 
+
+```{r}
+know.model.1 <- glmer(know_bin ~ (1 | person_code),
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+know.model.2 <- glmer(know_bin ~ (1 | person_code) + cond*j_expertise,
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+AIC(know.model.1)
+AIC(know.model.2) # lower = good
+
+summary(know.model.2)
+r.squaredGLMM(know.model.2)
+```
+
+```{r}
+tknow <- as.data.frame(table(DF$know_bin, DF$cond, DF$j_expertise))
+
+colnames(tknow) <- c("knowledge_attribution", "Condition", "Expertise", "Frequency")
+tknow$Expertise <- factor(tknow$Expertise,
+                          levels = c("naive", "expert"),
+                          labels = c("Naive", "Expert"))
+
+tknow %>% 
+  ggplot(aes(fill = knowledge_attribution, y = Frequency, x = Expertise)) +
+  labs("Figure X. Rates of Knowledge Attribution by Condition and Expertise", fill="knowledge_attribution") +
+  geom_bar(position="fill", stat = "identity") +
+  scale_y_continuous(labels=scales::percent) +
+  ylab("Percentage Respondents") +
+  scale_fill_grey(name = "Knowledge Attribution", start = .9, end=0, labels = c("Believes", "Knows")) +
+  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
+  facet_wrap(~Condition)  
+```
+
+
+## Luck Bin Analysis 
+
+```{r}
+luck.model.1 <- glmer(luck_bin ~ (1 | person_code),
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+luck.model.2 <- glmer(luck_bin ~ (1 | person_code) + cond*j_expertise,
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+AIC(luck.model.1)
+AIC(luck.model.2) # lower = good
+
+summary(luck.model.2)
+r.squaredGLMM(luck.model.2)
+```
+
+```{r}
+tluck <- as.data.frame(table(DF$luck_bin, DF$cond, DF$j_expertise))
+
+colnames(tluck) <- c("luck_attribution", "Condition", "Expertise", "Frequency")
+tluck$Expertise <- factor(tluck$Expertise,
+                          levels = c("naive", "expert"),
+                          labels = c("Naive", "Expert"))
+
+tluck %>% 
+  ggplot(aes(fill = luck_attribution, y = Frequency, x = Expertise)) +
+  labs("Figure X. Rates of Inability/Luck Attribution by Condition and Expertise", fill="luck_attribution") +
+  geom_bar(position="fill", stat = "identity") +
+  scale_y_continuous(labels=scales::percent) +
+  ylab("Percentage Respondents") +
+  scale_fill_grey(name = "Inability/Luck Attribution", start = .9, end=0, labels = c("Inability", "Luck")) +
+  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
+  facet_wrap(~Condition)  
+```
