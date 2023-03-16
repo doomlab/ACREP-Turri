@@ -1,0 +1,681 @@
+---
+title             : "The title"
+shorttitle        : "Title"
+
+author: 
+  - name          : "First Author"
+    affiliation   : "1"
+    corresponding : yes    # Define only one corresponding author
+    address       : "Postal address"
+    email         : "my@email.com"
+    role: # Contributorship roles (e.g., CRediT, https://credit.niso.org/)
+      - "Conceptualization"
+      - "Writing - Original Draft Preparation"
+      - "Writing - Review & Editing"
+  - name          : "Ernst-August Doelle"
+    affiliation   : "1,2"
+    role:
+      - "Writing - Review & Editing"
+      - "Supervision"
+
+affiliation:
+  - id            : "1"
+    institution   : "Wilhelm-Wundt-University"
+  - id            : "2"
+    institution   : "Konstanz Business School"
+
+authornote: |
+  Add complete departmental affiliations for each author here. Each new line herein must be indented, like this line.
+
+  Enter author note here.
+
+abstract: |
+  One or two sentences providing a **basic introduction** to the field,  comprehensible to a scientist in any discipline.
+  Two to three sentences of **more detailed background**, comprehensible  to scientists in related disciplines.
+  One sentence clearly stating the **general problem** being addressed by  this particular study.
+  One sentence summarizing the main result (with the words "**here we show**" or their equivalent).
+  Two or three sentences explaining what the **main result** reveals in direct comparison to what was thought to be the case previously, or how the  main result adds to previous knowledge.
+  One or two sentences to put the results into a more **general context**.
+  Two or three sentences to provide a **broader perspective**, readily comprehensible to a scientist in any discipline.
+  
+  <!-- https://tinyurl.com/ybremelq -->
+  
+keywords          : "keywords"
+wordcount         : "X"
+
+bibliography      : "r-references.bib"
+
+floatsintext      : no
+linenumbers       : yes
+draft             : no
+mask              : no
+
+figurelist        : no
+tablelist         : no
+footnotelist      : no
+
+classoption       : "man"
+output            : papaja::apa6_docx
+---
+
+```{r setup, include = FALSE}
+library("papaja")
+r_refs("r-references.bib")
+library(lme4)
+library(lmerTest)
+library(MuMIn)
+library(ggplot2)
+library(dplyr)
+library(broom.mixed)
+library(broom)
+library(flextable)
+```
+
+```{r analysis-preferences}
+# Seed for random number generation
+set.seed(42)
+knitr::opts_chunk$set(cache.extra = knitr::rand_seed, echo = FALSE, include = FALSE)
+```
+
+# Method
+
+```{r}
+# import data 
+load("full_long.Rdata")
+
+full_long <- full_long %>% 
+  filter(!is.na(j_cond)) %>% 
+  filter(vignette == "Darrel") %>% 
+  filter(!is.na(j_expertise))
+
+# screen data 
+DF <- full_long %>% 
+  filter(age_exclusion == FALSE) %>% 
+  filter(previous_exclusion == FALSE) %>% 
+  filter(purpose_exclusion == FALSE) %>% 
+  filter(lang_exclusion == FALSE) %>% 
+  filter(j_valid == TRUE)
+
+gender <- table(full_long$gender, useNA = "ifany")
+white <- table(full_long$ethn_wh, useNA = "ifany")
+black <- table(full_long$ethn_bl, useNA = "ifany")
+latin <- table(full_long$ethn_lat, useNA = "ifany")
+asian <- table(full_long$ethn_as, useNA = "ifany")
+sea <- table(full_long$ethn_sea, useNA = "ifany")
+lang <- table(full_long$survey_lang)
+lab <- length(unique(full_long$person_code))
+country <- table(full_long$lab_country)
+cond <- table(DF$cond)
+
+DF$j_cond <- factor(DF$j_cond, 
+                    levels = c("G", "K", "I"),
+                    labels = c("Gettier", "Knowledge", "Ignorance"))
+```
+
+## Participants
+
+`r nrow(full_long)` participants across `r lab` research teams completed the expertise portion of a larger study (CITE: Hall et al., 2023) and were included in the data for these analyses. Participants were generally female (*n* = `r unname(gender['female'])`) or male (*n* = `r unname(gender['male'])`) with all other data missing or marked as other. Participants could identify as multiple ethnicities, and the sample was mostly White (*n* = `r unname(white['TRUE'])`), Black (*n* = `r unname(black['TRUE'])`), Asian (*n* = `r unname(asian['TRUE'])`), Southeast Asian (*n* = `r unname(sea['TRUE'])`), or Latinx (*n* = `r unname(latin['TRUE'])`). The survey was completed in German  (*n* = `r unname(lang['ger'])`), English (*n* = `r unname(lang['eng'])`), and Turkish (*n* = `r unname(lang['tur'])`) in Germany  (*n* = `r unname(country['DEU'])`), Canada  (*n* = `r unname(country['CAN'])`), the United States  (*n* = `r unname(country['USA'])`), and Turkey (*n* = `r unname(country['TUR'])`). 
+
+Several exclusion criteria were used in this study, and participants could be marked for exclusion in multiple ways. We excluded participants if they met any of the following:  1) did not meet the minimum age (*n* = `r unname(table(full_long$age_exclusion)["TRUE"])`), 2) marked their language skills as "not well at all" or "not very well" (*n* = `r unname(table(full_long$lang_exclusion)["TRUE"])`), 3) provided an answer that indicated they understood the purpose of the study (*n* = `r unname(table(full_long$purpose_exclusion)["TRUE"])`), 4) said they had previously participated in the study (*n* = `r unname(table(full_long$previous_exclusion)["TRUE"])`), or 5) did not answer the attention check question correct about the Darrel vignette (*n* = `r unname(table(full_long$j_valid)["FALSE"])`). A total of `r nrow(full_long) - nrow(DF)` participants were excluded, leaving `r nrow(DF)` for final analysis in the Knowledge (*n* = `r unname(cond['Knowledge'])`), Gettier (*n* = `r unname(cond['Gettier'])`), and Ignorance (*n* = `r unname(cond['Ignorance'])`) conditions.  
+
+## Material
+
+## Procedure
+
+## Data Analysis 
+
+`r length(na.omit(DF$know_vas))` participants completed the study using the visual analog scale, while `r length(na.omit(DF$know_bin))` participants used a forced choice scale. The data was analyzed using a multilevel model controlling for research lab as a random intercept (cite: Gelman, 2006) with the *lme4* package in *R* (cite: lme4). Because each research lab was also tied to a specific country and study language, we did not include these variables as random intercepts because they were unique. The dependent variable in each model was the rating of knowledge, reasonable, and luck in the visual analog scale or the forced choice option. The independent variables included the condition (Knowledge, Gettier, and Ignorance) and the expertise condition (Expert, Naive). First, a model with only the random intercept of lab was analyzed as a baseline comparison. The interaction of condition and expertise was then added to the model, and the Aikaike Information Criterion (AIC) was used to determine if the addition of the fixed effects predictors was useful. Models with AIC values at least two points lower than their comparison are considered better. The individual predictors were then examined using $\alpha$ < .05 as a. criterion for significance. The overall pseudo-$R^2$ effect size was calculated with the *MuMIn* library for random and fixed effects (cite: MuMIn). 
+
+The forced choice data was modeled with a multilevel binary logistic regression. The visual analog scale data was modeled with a multilevel linear regression model; however, these results indicated a severe violation of normality, homoscedasticity, and linearity. Therefore, we also provide an analysis combining the visual analog data with the forced choice data by dichotomizing the data (>= 55 and <= 45 for each choice). The split of the data was choosen to lessen data loss, but not split directly in the middle of the data (*n* values provided below). While dichotomization is generally not recommended (cite: Maxwell I think), we believe that this model can confirm if results are better suited as a dichotomous model.
+
+# Results
+
+## VAS Analysis
+
+### Knowledge VAS Analysis 
+
+```{r}
+know.model.1 <- lmer(j_know_vas ~ (1 | person_code),
+                    data = DF, 
+                    na.action = "na.omit")
+
+know.model.2 <- lmer(j_know_vas ~ (1 | person_code) + j_cond*j_expertise,
+                    data = DF, 
+                    na.action = "na.omit")
+
+AIC(know.model.1)
+AIC(know.model.2) # lower = good
+
+summary(know.model.2)
+r.squaredGLMM(know.model.2)
+
+hist(residuals(know.model.2))
+{qqnorm(residuals(know.model.2)); abline(0,1)}
+plot(residuals(know.model.2), scale(fitted(know.model.2)))
+```
+
+First, a model of the knowledge visual analog scale (VAS) was analyzed with only the random intercept of research team (AIC = `r apa_num(AIC(know.model.1), big.mark = "")`). The addition of the interaction of condition and expertise predicting knowledge VAS ratings improved the overall model (AIC = `r apa_num(AIC(know.model.2), big.mark = "")`, $R^2_{fixed}$ = `r apa_p(r.squaredGLMM(know.model.2)[1])`). As shown in Table 1, only the main effect of condition was found, where participants rated the Gettier condition lower (i.e., closer to believes) than the Knowledge condition and higher (i.e., more knows) than the Ignorance condition. Figure 1 displays the means and 95% confidence interval for the knowledge ratings.  
+
+```{r tab1, results='asis', include = TRUE}
+know.model.table <- tidy(know.model.2)
+know.model.table$estimate <- apa_num(know.model.table$estimate)
+know.model.table$std.error <- apa_num(know.model.table$std.error)
+know.model.table$statistic <- apa_num(know.model.table$statistic)
+know.model.table$df <- apa_num(know.model.table$df)
+know.model.table$p.value <- apa_p(know.model.table$p.value)
+
+colnames(know.model.table) <- c("Effect", "Group", "Term", "b", "SE", 
+                                "t", "df", "p")
+know.model.table$Term <- c("Intercept", "Condition: Knowledge", 
+                           "Condition: Ignorance", "Expertise: Expert", 
+                           "Interaction: Knowledge X Expert", 
+                           "Interaction: Ignorance X Expert", 
+                           "SD: Intercept", "SD: Observation")
+
+flextable(know.model.table[ , -c(1:2)]) %>% 
+  autofit() %>% 
+  align(align = "center", part = "all") %>% 
+  set_caption("Knowledge VAS Coefficient Table")
+```
+
+```{r figure1, include = TRUE, echo = FALSE, fig.cap="Average visual analog scores for the rating of Believes (0) to Knows (100) for each condition and expertise grouping.", warning = FALSE}
+ggplot(DF, aes(j_cond, j_know_vas, color = j_expertise, fill = j_expertise)) + 
+  stat_summary(fun = mean,
+               geom = "bar",
+               position = "dodge") +
+  stat_summary(fun.data = mean_cl_normal,
+               geom = "errorbar", 
+               position = position_dodge(width = 0.90),
+               width = .2, 
+               color = "black") +
+  xlab("Vignette Condition") + 
+  ylab("Knowledge Visual Analog Scale") + 
+  theme_classic() + 
+  scale_fill_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey")) + 
+  scale_color_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey"))
+```
+
+### Reasonable VAS Analysis
+
+```{r}
+reason.model.1 <- lmer(j_reason_vas ~ (1 | person_code),
+                    data = DF, 
+                    na.action = "na.omit")
+
+reason.model.2 <- lmer(j_reason_vas ~ (1 | person_code) + j_cond*j_expertise,
+                    data = DF, 
+                    na.action = "na.omit")
+
+AIC(reason.model.1)
+AIC(reason.model.2) # lower = good
+
+summary(reason.model.2)
+r.squaredGLMM(reason.model.2)
+
+hist(residuals(reason.model.2))
+{qqnorm(residuals(reason.model.2)); abline(0,1)}
+plot(residuals(reason.model.2), scale(fitted(reason.model.2)))
+```
+
+For reasonable judgments, the interaction improved the model (AIC = `r apa_num(AIC(reason.model.2), big.mark = "")`, $R^2_{fixed}$ = `r apa_p(r.squaredGLMM(reason.model.2)[1])`) over the intercept only model with the random intercept of research team (AIC = `r apa_num(AIC(reason.model.1), big.mark = "")`). However, as shown in Table 2, no individual coefficients were significant predictors of reasonable ratings using the VAS, likely due the ceiling effect found in the data (see Figure 2).
+
+```{r tab2, results='asis', include = TRUE}
+reason.model.table <- tidy(reason.model.2)
+reason.model.table$estimate <- apa_num(reason.model.table$estimate)
+reason.model.table$std.error <- apa_num(reason.model.table$std.error)
+reason.model.table$statistic <- apa_num(reason.model.table$statistic)
+reason.model.table$df <- apa_num(reason.model.table$df)
+reason.model.table$p.value <- apa_p(reason.model.table$p.value)
+
+colnames(reason.model.table) <- c("Effect", "Group", "Term", "b", "SE", 
+                                "t", "df", "p")
+reason.model.table$Term <- c("Intercept", "Condition: Knowledge", 
+                           "Condition: Ignorance", "Expertise: Expert", 
+                           "Interaction: Knowledge X Expert", 
+                           "Interaction: Ignorance X Expert", 
+                           "SD: Intercept", "SD: Observation")
+
+flextable(reason.model.table[ , -c(1:2)]) %>% 
+  autofit() %>% 
+  align(align = "center", part = "all") %>% 
+  set_caption("Reasonable VAS Coefficient Table")
+```
+
+```{r figure2, include = TRUE, echo = FALSE, fig.cap="Average visual analog scores for the rating of Unreasonable (0) to Reasonable (100) for each condition and expertise grouping.", warning = FALSE}
+ggplot(DF, aes(j_cond, j_reason_vas, color = j_expertise, fill = j_expertise)) + 
+  stat_summary(fun = mean,
+               geom = "bar",
+               position = "dodge") +
+  stat_summary(fun.data = mean_cl_normal,
+               geom = "errorbar", 
+               position = position_dodge(width = 0.90),
+               width = .2, 
+               color = "black") +
+  xlab("Condition") + 
+  ylab("Reasonable Visual Analog Scale") + 
+  theme_classic() + 
+  scale_fill_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey")) + 
+  scale_color_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey"))
+```
+
+### Luck VAS Analysis 
+
+```{r}
+luck.model.1 <- lmer(j_luck_vas ~ (1 | person_code),
+                    data = DF, 
+                    na.action = "na.omit")
+
+luck.model.2 <- lmer(j_luck_vas ~ (1 | person_code) + j_cond*j_expertise,
+                    data = DF, 
+                    na.action = "na.omit")
+
+AIC(luck.model.1)
+AIC(luck.model.2) # lower = good
+
+summary(luck.model.2)
+r.squaredGLMM(luck.model.2)
+
+hist(residuals(luck.model.2))
+{qqnorm(residuals(luck.model.2)); abline(0,1)}
+plot(residuals(luck.model.2), scale(fitted(luck.model.2)))
+```
+
+The intercept only model (AIC = `r apa_num(AIC(luck.model.1), big.mark = "")`) was improved by adding the interaction of expertise and condition (AIC = `r apa_num(AIC(luck.model.2), big.mark = "")`, $R^2_{fixed}$ = `r apa_p(r.squaredGLMM(luck.model.2)[1])`). In this model, participants rated the Gettier condition overall as more lucky than both the Knowledge and Ignorance conditions (see Table 3). Additionally, a main effect of expertise was found such that experts were rated lower (more ability) than non-experts (more luck). No interaction of condition and expertise was found.  
+
+```{r tab3, results='asis', include = TRUE}
+luck.model.table <- tidy(luck.model.2)
+luck.model.table$estimate <- apa_num(luck.model.table$estimate)
+luck.model.table$std.error <- apa_num(luck.model.table$std.error)
+luck.model.table$statistic <- apa_num(luck.model.table$statistic)
+luck.model.table$df <- apa_num(luck.model.table$df)
+luck.model.table$p.value <- apa_p(luck.model.table$p.value)
+
+colnames(luck.model.table) <- c("Effect", "Group", "Term", "b", "SE", 
+                                "t", "df", "p")
+luck.model.table$Term <- c("Intercept", "Condition: Knowledge", 
+                           "Condition: Ignorance", "Expertise: Expert", 
+                           "Interaction: Knowledge X Expert", 
+                           "Interaction: Ignorance X Expert", 
+                           "SD: Intercept", "SD: Observation")
+
+flextable(luck.model.table[ , -c(1:2)]) %>% 
+  autofit() %>% 
+  align(align = "center", part = "all") %>% 
+  set_caption("Luck VAS Coefficient Table")
+```
+
+```{r figure3, include = TRUE, echo = FALSE, fig.cap="Average visual analog scores for the rating of Ability (0) to Luck (100) for each condition and expertise grouping.", warning = FALSE}
+ggplot(DF, aes(j_cond, j_luck_vas, color = j_expertise, fill = j_expertise)) + 
+  stat_summary(fun = mean,
+               geom = "bar",
+               position = "dodge") +
+  stat_summary(fun.data = mean_cl_normal,
+               geom = "errorbar", 
+               position = position_dodge(width = 0.90),
+               width = .2, 
+               color = "black") +
+  xlab("Condition") + 
+  ylab("Luck Visual Analog Scale") + 
+  theme_classic() + 
+  scale_fill_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey")) + 
+  scale_color_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey"))
+```
+
+## Forced Choice
+
+The forced choice models were analyzed using logistic regression, given the dichotomous outcome. These models show less power than the VAS models, as their sample size is smaller. Each model was first checked for large enough sample sizes in each cell of expert by condition by answer choice. The reasonable choice showed the same ceiling effect in which very few participants chose unreasonable as the answer choice. Therefore, this model was not analyzed. 
+
+### Knowledge Bin Analysis 
+
+```{r}
+know.model.1 <- glmer(j_know_bin ~ (1 | person_code),
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+know.model.2 <- glmer(j_know_bin ~ (1 | person_code) + j_cond*j_expertise,
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+AIC(know.model.1)
+AIC(know.model.2) # lower = good
+
+summary(know.model.2)
+r.squaredGLMM(know.model.2)
+```
+
+The knowledge model with the interaction (AIC = `r apa_num(AIC(know.model.2), big.mark = "")`, $R^2_{fixed}$ = `r apa_p(r.squaredGLMM(know.model.2)[1])`) showed a better fit than the intercept only model (AIC = `r apa_num(AIC(know.model.1), big.mark = "")`). Unlike the VAS model, the Gettier condition was only different from the Ignorance condition, with more knows choice in the Gettier condition (see Table 4 and Figure 4). The Gettier and Knowledge condition choices were not different. No other effects were found. 
+
+```{r tab4, results='asis', include = TRUE}
+know.model.table <- tidy(know.model.2)
+know.model.table$estimate <- apa_num(know.model.table$estimate)
+know.model.table$std.error <- apa_num(know.model.table$std.error)
+know.model.table$statistic <- apa_num(know.model.table$statistic)
+know.model.table$p.value <- apa_p(know.model.table$p.value)
+
+colnames(know.model.table) <- c("Effect", "Group", "Term", "b", "SE", 
+                                "Z", "p")
+know.model.table$Term <- c("Intercept", "Condition: Knowledge", 
+                           "Condition: Ignorance", "Expertise: Expert", 
+                           "Interaction: Knowledge X Expert", 
+                           "Interaction: Ignorance X Expert", 
+                           "SD: Intercept")
+
+flextable(know.model.table[ , -c(1:2)]) %>% 
+  autofit() %>% 
+  align(align = "center", part = "all") %>% 
+  set_caption("Knowledge Forced Choice Coefficient Table")
+```
+
+```{r figure4, include = TRUE, echo = FALSE, fig.cap="Selection of knows versus believes in the forced choice task.", warning = FALSE}
+
+tknow <- as.data.frame(table(DF$j_know_bin, DF$j_cond, DF$j_expertise))
+
+colnames(tknow) <- c("knowledge_attribution", "j_condition", "Expertise", "Frequency")
+tknow$Expertise <- factor(tknow$Expertise,
+                          levels = c("naive", "expert"),
+                          labels = c("Naive", "Expert"))
+
+tknow %>% 
+  ggplot(aes(fill = knowledge_attribution, y = Frequency, x = Expertise)) +
+  labs("Figure X. Rates of Knowledge Attribution by Condition and Expertise", fill="knowledge_attribution") +
+  geom_bar(position="fill", stat = "identity") +
+  scale_y_continuous(labels=scales::percent) +
+  ylab("Percentage Respondents") +
+  scale_fill_grey(name = "Knowledge Attribution", start = .9, end=0, labels = c("Knows", "Believes")) +
+  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
+  facet_wrap(~j_condition)  
+```
+
+### Luck Bin Analysis 
+
+```{r}
+luck.model.1 <- glmer(j_luck_bin ~ (1 | person_code),
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+luck.model.2 <- glmer(j_luck_bin ~ (1 | person_code) + j_cond*j_expertise,
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+AIC(luck.model.1)
+AIC(luck.model.2) # lower = good
+
+summary(luck.model.2)
+r.squaredGLMM(luck.model.2)
+```
+
+While the interaction model (AIC = `r apa_num(AIC(luck.model.2), big.mark = "")`, $R^2_{fixed}$ = `r apa_p(r.squaredGLMM(luck.model.2)[1])`) fit better than the intercept only model (AIC = `r apa_num(AIC(luck.model.1), big.mark = "")`), Table 5 indicates that no coefficient was a significant predictor of the choice between ability and luck. See Figure 5. 
+
+```{r tab5, results='asis', include = TRUE}
+luck.model.table <- tidy(luck.model.2)
+luck.model.table$estimate <- apa_num(luck.model.table$estimate)
+luck.model.table$std.error <- apa_num(luck.model.table$std.error)
+luck.model.table$statistic <- apa_num(luck.model.table$statistic)
+luck.model.table$p.value <- apa_p(luck.model.table$p.value)
+
+colnames(luck.model.table) <- c("Effect", "Group", "Term", "b", "SE", 
+                                "Z", "p")
+luck.model.table$Term <- c("Intercept", "Condition: Knowledge", 
+                           "Condition: Ignorance", "Expertise: Expert", 
+                           "Interaction: Knowledge X Expert", 
+                           "Interaction: Ignorance X Expert", 
+                           "SD: Intercept")
+
+flextable(luck.model.table[ , -c(1:2)]) %>% 
+  autofit() %>% 
+  align(align = "center", part = "all") %>% 
+  set_caption("Luck Forced Choice Coefficient Table")
+```
+
+```{r figure5, include = TRUE, echo = FALSE, fig.cap="Selection of luck versus ability in the forced choice task.", warning = FALSE}
+tluck <- as.data.frame(table(DF$j_luck_bin, DF$j_cond, DF$j_expertise))
+
+colnames(tluck) <- c("luck_attribution", "j_condition", "Expertise", "Frequency")
+tluck$Expertise <- factor(tluck$Expertise,
+                          levels = c("naive", "expert"),
+                          labels = c("Naive", "Expert"))
+
+tluck %>% 
+  ggplot(aes(fill = luck_attribution, y = Frequency, x = Expertise)) +
+  labs("Figure X. Rates of Ability/Luck Attribution by Condition and Expertise", fill="luck_attribution") +
+  geom_bar(position="fill", stat = "identity") +
+  scale_y_continuous(labels=scales::percent) +
+  ylab("Percentage Respondents") +
+  scale_fill_grey(name = "Ability/Luck Attribution", start = .9, end=0, labels = c("Luck", "Ability")) +
+  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
+  facet_wrap(~j_condition)  
+```
+
+## Combined Analyses
+
+As noted earlier, the linear models for the VAS did not meet the assumptions of linear regression. In these analyses, we dichotomized each choice by putting choices higher than 55 and lower than 45 into the binned categories. Given the added data, the reasonable model does meet the minimum cell size requirements, but still shows a heavy ceiling effect.   
+
+```{r}
+DF$j_know_combined <- ifelse(
+  DF$j_know_vas >= 55, "Knows", 
+  ifelse(
+    DF$j_know_vas <= 45, "Believes",
+    NA
+  )
+)
+DF$j_know_combined[DF$j_know_bin == "knows"] <- "Knows"
+DF$j_know_combined[DF$j_know_bin == "believes"] <- "Believes"
+
+DF %>% 
+  group_by(j_expertise, j_cond, j_know_combined) %>% 
+  count() %>% 
+  na.omit()
+
+DF$j_reason_combined <- ifelse(
+  DF$j_reason_vas >= 55, "Reasonable", 
+  ifelse(
+    DF$j_reason_vas <= 45, "Unreasonable",
+    NA
+  )
+)
+DF$j_reason_combined[DF$j_reason_bin == "reasonable"] <- "Reasonable"
+DF$j_reason_combined[DF$j_reason_bin == "Unreasonable"] <- "Unreasonable"
+
+DF %>% 
+  group_by(j_expertise, j_cond, j_reason_combined) %>% 
+  count() %>% 
+  na.omit()
+
+DF$j_luck_combined <- ifelse(
+  DF$j_luck_vas >= 55, "Luck", 
+  ifelse(
+    DF$j_luck_vas <= 45, "Ability",
+    NA
+  )
+)
+DF$j_luck_combined[DF$j_luck_bin == "luck"] <- "Luck"
+DF$j_luck_combined[DF$j_luck_bin == "ability"] <- "Ability"
+
+DF %>% 
+  group_by(j_expertise, j_cond, j_luck_combined) %>% 
+  count() %>% 
+  na.omit()
+```
+
+### Knowledge Combined Analysis 
+
+```{r}
+DF$j_know_combined <- factor(DF$j_know_combined)
+
+know.model.1 <- glmer(j_know_combined ~ (1 | person_code),
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+know.model.2 <- glmer(j_know_combined ~ (1 | person_code) + j_cond*j_expertise,
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+AIC(know.model.1)
+AIC(know.model.2) # lower = good
+
+summary(know.model.2)
+r.squaredGLMM(know.model.2)
+```
+
+The intercept only model (AIC = `r apa_num(AIC(know.model.1), big.mark = "")`) was improved by adding the interaction of expertise and condition, (AIC = `r apa_num(AIC(know.model.2), big.mark = "")`, $R^2_{fixed}$ = `r apa_p(r.squaredGLMM(know.model.2)[1])`). As shown in Table 6 and Figure 6, these results converge on previous findings for forced choice data, showing that the Gettier condition was not different from the Knowledge condition but did show more selection of knows than the Ignorance condition. The difference in the results from the VAS model may show that VAS is slightly more sensitive to the difference in Gettier versus Knowledge; however, it is important to remember that the data is mostly bimodal and non-linear in the VAS data. 
+
+```{r tab6, results='asis', include = TRUE}
+know.model.table <- tidy(know.model.2)
+know.model.table$estimate <- apa_num(know.model.table$estimate)
+know.model.table$std.error <- apa_num(know.model.table$std.error)
+know.model.table$statistic <- apa_num(know.model.table$statistic)
+know.model.table$p.value <- apa_p(know.model.table$p.value)
+
+colnames(know.model.table) <- c("Effect", "Group", "Term", "b", "SE", 
+                                "Z", "p")
+know.model.table$Term <- c("Intercept", "Condition: Knowledge", 
+                           "Condition: Ignorance", "Expertise: Expert", 
+                           "Interaction: Knowledge X Expert", 
+                           "Interaction: Ignorance X Expert", 
+                           "SD: Intercept")
+
+flextable(know.model.table[ , -c(1:2)]) %>% 
+  autofit() %>% 
+  align(align = "center", part = "all") %>% 
+  set_caption("Luck Forced Choice Coefficient Table")
+```
+
+```{r figure6, include = TRUE, echo = FALSE, fig.cap="Selection of know versus believes in the combined data.", warning = FALSE}
+tknow <- as.data.frame(table(DF$j_know_combined, DF$j_cond, DF$j_expertise))
+
+colnames(tknow) <- c("knowledge_attribution", "j_condition", "Expertise", "Frequency")
+tknow$Expertise <- factor(tknow$Expertise,
+                          levels = c("naive", "expert"),
+                          labels = c("Naive", "Expert"))
+
+tknow %>% 
+  ggplot(aes(fill = knowledge_attribution, y = Frequency, x = Expertise)) +
+  labs("Figure X. Rates of Knowledge Attribution by Condition and Expertise", fill="knowledge_attribution") +
+  geom_bar(position="fill", stat = "identity") +
+  scale_y_continuous(labels=scales::percent) +
+  ylab("Percentage Respondents") +
+  scale_fill_grey(name = "Knowledge Attribution", start = .9, end=0, labels = c("Believes", "Knows")) +
+  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
+  facet_wrap(~j_condition)  
+```
+
+### Reasonable Bin Analysis 
+
+```{r}
+DF$j_reason_combined <- factor(DF$j_reason_combined)
+reason.model.1 <- glmer(j_reason_combined ~ (1 | person_code),
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+reason.model.2 <- glmer(j_reason_combined ~ (1 | person_code) + j_cond*j_expertise,
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+AIC(reason.model.1)
+AIC(reason.model.2) # lower = good
+
+summary(reason.model.2)
+r.squaredGLMM(reason.model.2)
+```
+
+In this model, we find that the interaction model (AIC = `r apa_num(AIC(reason.model.2), big.mark = "")`, $R^2_{fixed}$ = `r apa_p(r.squaredGLMM(reason.model.2)[1])`) does not improve model fit over the intercept only model (AIC = `r apa_num(AIC(reason.model.1), big.mark = "")`). Figure 7 illustrates that very few individuals select unreasonable, thus, making it difficult to predict the difference in category selection. 
+
+```{r figure7, include = TRUE, echo = FALSE, fig.cap="Selection of unreasonable versus reasonable in the combined data.", warning = FALSE}
+treason <- as.data.frame(table(DF$j_reason_combined, DF$j_cond, DF$j_expertise))
+
+colnames(treason) <- c("reasonable_attribution", "j_condition", "Expertise", "Frequency")
+treason$Expertise <- factor(treason$Expertise,
+                          levels = c("naive", "expert"),
+                          labels = c("Naive", "Expert"))
+
+treason %>% 
+  ggplot(aes(fill = reasonable_attribution, y = Frequency, x = Expertise)) +
+  labs("Figure X. Rates of Reasonable Attribution by Condition and Expertise", fill="reasonable_attribution") +
+  geom_bar(position="fill", stat = "identity") +
+  scale_y_continuous(labels=scales::percent) +
+  ylab("Percentage Respondents") +
+  scale_fill_grey(name = "Reasonable Attribution", start = .9, end=0, labels = c("Reasonable", "Unreasonable")) +
+  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
+  facet_wrap(~j_condition)  
+```
+
+### Luck Bin Analysis 
+
+```{r}
+DF$j_luck_combined <- factor(DF$j_luck_combined)
+luck.model.1 <- glmer(j_luck_combined ~ (1 | person_code),
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+luck.model.2 <- glmer(j_luck_combined ~ (1 | person_code) + j_cond*j_expertise,
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+AIC(luck.model.1)
+AIC(luck.model.2) # lower = good
+
+summary(luck.model.2)
+r.squaredGLMM(luck.model.2)
+```
+
+Mimicking results from the previous luck models, the interaction model (AIC = `r apa_num(AIC(luck.model.2), big.mark = "")`, $R^2_{fixed}$ = `r apa_p(r.squaredGLMM(luck.model.2)[1])`) was a better fit than the intercept only model (AIC = `r apa_num(AIC(luck.model.1), big.mark = "")`). In these results, the participants in the Gettier condition was more likely to chose luck than knowledge, but no differences between Gettier and Ignorance choice were found. Figure 8 and Table 7 show the coefficient results and data. Again, we see that the VAS results may potentially be sensitive to very small differences in expertise and Ignorance, with the cavaet that these results are also bimodel and non-linear.  
+
+```{r tab7, results='asis', include = TRUE}
+luck.model.table <- tidy(luck.model.2)
+luck.model.table$estimate <- apa_num(luck.model.table$estimate)
+luck.model.table$std.error <- apa_num(luck.model.table$std.error)
+luck.model.table$statistic <- apa_num(luck.model.table$statistic)
+luck.model.table$p.value <- apa_p(luck.model.table$p.value)
+
+colnames(luck.model.table) <- c("Effect", "Group", "Term", "b", "SE", 
+                                "Z", "p")
+luck.model.table$Term <- c("Intercept", "Condition: Knowledge", 
+                           "Condition: Ignorance", "Expertise: Expert", 
+                           "Interaction: Knowledge X Expert", 
+                           "Interaction: Ignorance X Expert", 
+                           "SD: Intercept")
+
+flextable(luck.model.table[ , -c(1:2)]) %>% 
+  autofit() %>% 
+  align(align = "center", part = "all") %>% 
+  set_caption("Luck Forced Choice Coefficient Table")
+```
+
+```{r figure8, include = TRUE, echo = FALSE, fig.cap="Selection of ability versus luck in the combined data.", warning = FALSE}
+tluck <- as.data.frame(table(DF$j_luck_combined, DF$j_cond, DF$j_expertise))
+
+colnames(tluck) <- c("luck_attribution", "j_condition", "Expertise", "Frequency")
+tluck$Expertise <- factor(tluck$Expertise,
+                          levels = c("naive", "expert"),
+                          labels = c("Naive", "Expert"))
+
+tluck %>% 
+  ggplot(aes(fill = luck_attribution, y = Frequency, x = Expertise)) +
+  labs("Figure X. Rates of Inability/Luck Attribution by Condition and Expertise", fill="luck_attribution") +
+  geom_bar(position="fill", stat = "identity") +
+  scale_y_continuous(labels=scales::percent) +
+  ylab("Percentage Respondents") +
+  scale_fill_grey(name = "Ability/Luck Attribution", start = .9, end=0, labels = c("Ability", "Luck")) +
+  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
+  facet_wrap(~j_condition)  
+```
+
+# Discussion
+
+
+\newpage
+
+# References
+
+::: {#refs custom-style="Bibliography"}
+:::

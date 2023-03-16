@@ -47,7 +47,12 @@ load("full_long.Rdata")
 [95] "lang_exclusion" - Said their language wasn't good
 
 ```{r}
-DF <- full_long
+DF <- full_long %>% 
+  filter(age_exclusion == FALSE) %>% 
+  filter(previous_exclusion == FALSE) %>% 
+  filter(purpose_exclusion == FALSE) %>% 
+  filter(lang_exclusion == FALSE) %>% 
+  filter(j_valid == TRUE) 
 ```
 
 ## Examine Data
@@ -55,52 +60,65 @@ DF <- full_long
 ```{r}
 table(DF$j_expertise, 
       DF$vignette, 
-      DF$cond,
+      DF$j_cond,
       useNA = "ifany")
 
 # only use darrel
 DF <- DF %>% 
   filter(vignette == "Darrel") %>% 
-  filter(!is.na(cond)) %>% 
+  filter(!is.na(j_cond)) %>% 
   filter(!is.na(j_expertise))
 
 # look at table
 table(DF$j_expertise, 
-      DF$cond,
+      DF$j_cond,
       useNA = "ifany")
 
 # look at the DVs
-tapply(DF$know_vas, list(DF$j_expertise, DF$cond), mean, na.rm = T)
-tapply(DF$know_vas, list(DF$j_expertise, DF$cond), sd, na.rm = T)
-tapply(DF$know_vas, list(DF$j_expertise, DF$cond), function (x){sum(!is.na(x))})
+tapply(DF$j_know_vas, list(DF$j_expertise, DF$j_cond), mean, na.rm = T)
+tapply(DF$j_know_vas, list(DF$j_expertise, DF$j_cond), sd, na.rm = T)
+tapply(DF$j_know_vas, list(DF$j_expertise, DF$j_cond), function (x){sum(!is.na(x))})
 
-tapply(DF$luck_vas, list(DF$j_expertise, DF$cond), mean, na.rm = T)
-tapply(DF$luck_vas, list(DF$j_expertise, DF$cond), sd, na.rm = T)
-tapply(DF$luck_vas, list(DF$j_expertise, DF$cond), function (x){sum(!is.na(x))})
+tapply(DF$j_reason_vas, list(DF$j_expertise, DF$j_cond), mean, na.rm = T)
+tapply(DF$j_reason_vas, list(DF$j_expertise, DF$j_cond), sd, na.rm = T)
+tapply(DF$j_reason_vas, list(DF$j_expertise, DF$j_cond), function (x){sum(!is.na(x))})
 
-# the bin is reversed
-DF$know_bin <- 2 - DF$know_bin
-DF$luck_bin <- 2 - DF$luck_bin
-
-DF %>% 
-  group_by(j_expertise, cond, know_bin) %>% 
-  count()
+tapply(DF$j_luck_vas, list(DF$j_expertise, DF$j_cond), mean, na.rm = T)
+tapply(DF$j_luck_vas, list(DF$j_expertise, DF$j_cond), sd, na.rm = T)
+tapply(DF$j_luck_vas, list(DF$j_expertise, DF$j_cond), function (x){sum(!is.na(x))})
 
 DF %>% 
-  group_by(j_expertise, cond, luck_bin) %>% 
-  count()
+  group_by(j_expertise, j_cond, j_know_bin) %>% 
+  count() %>% 
+  na.omit()
+
+DF %>% 
+  group_by(j_expertise, j_cond, j_reason_bin) %>% 
+  count() %>% 
+  na.omit()
+
+DF %>% 
+  group_by(j_expertise, j_cond, j_luck_bin) %>% 
+  count() %>% 
+  na.omit()
+
+DF$j_cond <- factor(DF$j_cond, 
+                    levels = c("K", "G", "I"),
+                    labels = c("Knowledge", "Gettier", "Ignorance"))
 ```
 
-## Knowledge VAS Analysis 
+## VAS Analysis
+
+### Knowledge VAS Analysis 
 
 We will control for research lab using a multilevel model. We could also control for language, but lab also accounts for this variable. 
 
 ```{r}
-know.model.1 <- lmer(know_vas ~ (1 | person_code),
+know.model.1 <- lmer(j_know_vas ~ (1 | person_code),
                     data = DF, 
                     na.action = "na.omit")
 
-know.model.2 <- lmer(know_vas ~ (1 | person_code) + cond*j_expertise,
+know.model.2 <- lmer(j_know_vas ~ (1 | person_code) + j_cond*j_expertise,
                     data = DF, 
                     na.action = "na.omit")
 
@@ -109,32 +127,76 @@ AIC(know.model.2) # lower = good
 
 summary(know.model.2)
 r.squaredGLMM(know.model.2)
+
+hist(residuals(know.model.2))
+{qqnorm(residuals(know.model.2)); abline(0,1)}
+plot(residuals(know.model.2), scale(fitted(know.model.2)))
 ```
 
 ```{r}
-ggplot(DF, aes(cond, know_vas, color = j_expertise, fill = j_expertise)) + 
+ggplot(DF, aes(j_cond, j_know_vas, color = j_expertise, fill = j_expertise)) + 
   stat_summary(fun = mean,
                geom = "bar",
                position = "dodge") +
   stat_summary(fun.data = mean_cl_normal,
                geom = "errorbar", 
                position = position_dodge(width = 0.90),
-               width = .2) +
-  xlab("Condition") + 
+               width = .2, 
+               color = "black") +
+  xlab("Vignette Condition") + 
   ylab("Knowledge Visual Analog Scale") + 
   theme_classic() + 
-  scale_fill_discrete(name = "Expertise", labels = c("Naive", "Expert")) + 
-  scale_color_discrete(name = "Expertise", labels = c("Naive", "Expert"))
+  scale_fill_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey")) + 
+  scale_color_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey"))
 ```
 
-## Luck VAS Analysis 
+### Reasonable VAS Analysis
 
 ```{r}
-luck.model.1 <- lmer(luck_vas ~ (1 | person_code),
+reason.model.1 <- lmer(j_reason_vas ~ (1 | person_code),
                     data = DF, 
                     na.action = "na.omit")
 
-luck.model.2 <- lmer(luck_vas ~ (1 | person_code) + cond*j_expertise,
+reason.model.2 <- lmer(j_reason_vas ~ (1 | person_code) + j_cond*j_expertise,
+                    data = DF, 
+                    na.action = "na.omit")
+
+AIC(reason.model.1)
+AIC(reason.model.2) # lower = good
+
+summary(reason.model.2)
+r.squaredGLMM(reason.model.2)
+
+hist(residuals(reason.model.2))
+{qqnorm(residuals(reason.model.2)); abline(0,1)}
+plot(residuals(reason.model.2), scale(fitted(reason.model.2)))
+```
+
+```{r}
+ggplot(DF, aes(j_cond, j_reason_vas, color = j_expertise, fill = j_expertise)) + 
+  stat_summary(fun = mean,
+               geom = "bar",
+               position = "dodge") +
+  stat_summary(fun.data = mean_cl_normal,
+               geom = "errorbar", 
+               position = position_dodge(width = 0.90),
+               width = .2, 
+               color = "black") +
+  xlab("Vignette Condition") + 
+  ylab("Reasonable Visual Analog Scale") + 
+  theme_classic() + 
+  scale_fill_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey")) + 
+  scale_color_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey"))
+```
+
+### Luck VAS Analysis 
+
+```{r}
+luck.model.1 <- lmer(j_luck_vas ~ (1 | person_code),
+                    data = DF, 
+                    na.action = "na.omit")
+
+luck.model.2 <- lmer(j_luck_vas ~ (1 | person_code) + j_cond*j_expertise,
                     data = DF, 
                     na.action = "na.omit")
 
@@ -143,33 +205,39 @@ AIC(luck.model.2) # lower = good
 
 summary(luck.model.2)
 r.squaredGLMM(luck.model.2)
+
+hist(residuals(luck.model.2))
+{qqnorm(residuals(luck.model.2)); abline(0,1)}
+plot(residuals(luck.model.2), scale(fitted(luck.model.2)))
 ```
 
 ```{r}
-ggplot(DF, aes(cond, luck_vas, color = j_expertise, fill = j_expertise)) + 
+ggplot(DF, aes(j_cond, j_luck_vas, color = j_expertise, fill = j_expertise)) + 
   stat_summary(fun = mean,
                geom = "bar",
                position = "dodge") +
   stat_summary(fun.data = mean_cl_normal,
                geom = "errorbar", 
                position = position_dodge(width = 0.90),
-               width = .2) +
-  xlab("Condition") + 
+               width = .2, 
+               color = "black") +
+  xlab("Vignette Condition") + 
   ylab("Luck Visual Analog Scale") + 
   theme_classic() + 
-  scale_fill_discrete(name = "Expertise", labels = c("Naive", "Expert")) + 
-  scale_color_discrete(name = "Expertise", labels = c("Naive", "Expert"))
+  scale_fill_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey")) + 
+  scale_color_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey"))
 ```
+## Forced Choice
 
-## Knowledge Bin Analysis 
+### Knowledge Bin Analysis 
 
 ```{r}
-know.model.1 <- glmer(know_bin ~ (1 | person_code),
+know.model.1 <- glmer(j_know_bin ~ (1 | person_code),
                     data = DF, 
                     family = binomial,
                     na.action = "na.omit")
 
-know.model.2 <- glmer(know_bin ~ (1 | person_code) + cond*j_expertise,
+know.model.2 <- glmer(j_know_bin ~ (1 | person_code) + j_cond*j_expertise,
                     data = DF, 
                     family = binomial,
                     na.action = "na.omit")
@@ -182,9 +250,9 @@ r.squaredGLMM(know.model.2)
 ```
 
 ```{r}
-tknow <- as.data.frame(table(DF$know_bin, DF$cond, DF$j_expertise))
+tknow <- as.data.frame(table(DF$j_know_bin, DF$j_cond, DF$j_expertise))
 
-colnames(tknow) <- c("knowledge_attribution", "Condition", "Expertise", "Frequency")
+colnames(tknow) <- c("knowledge_attribution", "j_condition", "Expertise", "Frequency")
 tknow$Expertise <- factor(tknow$Expertise,
                           levels = c("naive", "expert"),
                           labels = c("Naive", "Expert"))
@@ -197,19 +265,57 @@ tknow %>%
   ylab("Percentage Respondents") +
   scale_fill_grey(name = "Knowledge Attribution", start = .9, end=0, labels = c("Believes", "Knows")) +
   theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
-  facet_wrap(~Condition)  
+  facet_wrap(~j_condition)  
 ```
 
-
-## Luck Bin Analysis 
+### Reasonable Bin Analysis 
 
 ```{r}
-luck.model.1 <- glmer(luck_bin ~ (1 | person_code),
+reason.model.1 <- glmer(j_reason_bin ~ (1 | person_code),
                     data = DF, 
                     family = binomial,
                     na.action = "na.omit")
 
-luck.model.2 <- glmer(luck_bin ~ (1 | person_code) + cond*j_expertise,
+reason.model.2 <- glmer(j_reason_bin ~ (1 | person_code) + j_cond*j_expertise,
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+AIC(reason.model.1)
+AIC(reason.model.2) # lower = good
+
+summary(reason.model.2)
+r.squaredGLMM(reason.model.2)
+```
+
+```{r}
+treason <- as.data.frame(table(DF$j_reason_bin, DF$j_cond, DF$j_expertise))
+
+colnames(treason) <- c("reasonable_attribution", "j_condition", "Expertise", "Frequency")
+treason$Expertise <- factor(treason$Expertise,
+                          levels = c("naive", "expert"),
+                          labels = c("Naive", "Expert"))
+
+treason %>% 
+  ggplot(aes(fill = reasonable_attribution, y = Frequency, x = Expertise)) +
+  labs("Figure X. Rates of Reasonable Attribution by Condition and Expertise", fill="reasonable_attribution") +
+  geom_bar(position="fill", stat = "identity") +
+  scale_y_continuous(labels=scales::percent) +
+  ylab("Percentage Respondents") +
+  scale_fill_grey(name = "Reasonable Attribution", start = .9, end=0, labels = c("Reasonable", "Unreasonable")) +
+  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
+  facet_wrap(~j_condition)  
+```
+
+### Luck Bin Analysis 
+
+```{r}
+luck.model.1 <- glmer(j_luck_bin ~ (1 | person_code),
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+luck.model.2 <- glmer(j_luck_bin ~ (1 | person_code) + j_cond*j_expertise,
                     data = DF, 
                     family = binomial,
                     na.action = "na.omit")
@@ -222,9 +328,184 @@ r.squaredGLMM(luck.model.2)
 ```
 
 ```{r}
-tluck <- as.data.frame(table(DF$luck_bin, DF$cond, DF$j_expertise))
+tluck <- as.data.frame(table(DF$j_luck_bin, DF$j_cond, DF$j_expertise))
 
-colnames(tluck) <- c("luck_attribution", "Condition", "Expertise", "Frequency")
+colnames(tluck) <- c("luck_attribution", "j_condition", "Expertise", "Frequency")
+tluck$Expertise <- factor(tluck$Expertise,
+                          levels = c("naive", "expert"),
+                          labels = c("Naive", "Expert"))
+
+tluck %>% 
+  ggplot(aes(fill = luck_attribution, y = Frequency, x = Expertise)) +
+  labs("Figure X. Rates of Ability/Luck Attribution by Condition and Expertise", fill="luck_attribution") +
+  geom_bar(position="fill", stat = "identity") +
+  scale_y_continuous(labels=scales::percent) +
+  ylab("Percentage Respondents") +
+  scale_fill_grey(name = "Ability/Luck Attribution", start = .9, end=0, labels = c("Ability", "Luck")) +
+  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
+  facet_wrap(~j_condition)  
+```
+
+## Combined Analyses
+
+```{r}
+DF$j_know_combined <- ifelse(
+  DF$j_know_vas >= 55, "Knows", 
+  ifelse(
+    DF$j_know_vas <= 45, "Believes",
+    NA
+  )
+)
+DF$j_know_combined[DF$j_know_bin == "knows"] <- "Knows"
+DF$j_know_combined[DF$j_know_bin == "believes"] <- "Believes"
+
+DF %>% 
+  group_by(j_expertise, j_cond, j_know_combined) %>% 
+  count() %>% 
+  na.omit()
+
+DF$j_reason_combined <- ifelse(
+  DF$j_reason_vas >= 55, "Reasonable", 
+  ifelse(
+    DF$j_reason_vas <= 45, "Unreasonable",
+    NA
+  )
+)
+DF$j_reason_combined[DF$j_reason_bin == "reasonable"] <- "Reasonable"
+DF$j_reason_combined[DF$j_reason_bin == "Unreasonable"] <- "Unreasonable"
+
+DF %>% 
+  group_by(j_expertise, j_cond, j_reason_combined) %>% 
+  count() %>% 
+  na.omit()
+
+DF %>% 
+  group_by(j_expertise, j_cond, j_know_combined) %>% 
+  count() %>% 
+  na.omit()
+
+DF$j_luck_combined <- ifelse(
+  DF$j_luck_vas >= 55, "Ability", 
+  ifelse(
+    DF$j_luck_vas <= 45, "Luck",
+    NA
+  )
+)
+DF$j_luck_combined[DF$j_luck_bin == "luck"] <- "Luck"
+DF$j_luck_combined[DF$j_luck_bin == "ability"] <- "Ability"
+
+DF %>% 
+  group_by(j_expertise, j_cond, j_luck_combined) %>% 
+  count() %>% 
+  na.omit()
+```
+
+### Knowledge Combined Analysis 
+
+```{r}
+DF$j_know_combined <- factor(DF$j_know_combined)
+
+know.model.1 <- glmer(j_know_combined ~ (1 | person_code),
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+know.model.2 <- glmer(j_know_combined ~ (1 | person_code) + j_cond*j_expertise,
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+AIC(know.model.1)
+AIC(know.model.2) # lower = good
+
+summary(know.model.2)
+r.squaredGLMM(know.model.2)
+```
+
+```{r}
+tknow <- as.data.frame(table(DF$j_know_combined, DF$j_cond, DF$j_expertise))
+
+colnames(tknow) <- c("knowledge_attribution", "j_condition", "Expertise", "Frequency")
+tknow$Expertise <- factor(tknow$Expertise,
+                          levels = c("naive", "expert"),
+                          labels = c("Naive", "Expert"))
+
+tknow %>% 
+  ggplot(aes(fill = knowledge_attribution, y = Frequency, x = Expertise)) +
+  labs("Figure X. Rates of Knowledge Attribution by Condition and Expertise", fill="knowledge_attribution") +
+  geom_bar(position="fill", stat = "identity") +
+  scale_y_continuous(labels=scales::percent) +
+  ylab("Percentage Respondents") +
+  scale_fill_grey(name = "Knowledge Attribution", start = .9, end=0, labels = c("Believes", "Knows")) +
+  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
+  facet_wrap(~j_condition)  
+```
+
+### Reasonable Bin Analysis 
+
+```{r}
+DF$j_reason_combined <- factor(DF$j_reason_combined)
+reason.model.1 <- glmer(j_reason_combined ~ (1 | person_code),
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+reason.model.2 <- glmer(j_reason_combined ~ (1 | person_code) + j_cond*j_expertise,
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+AIC(reason.model.1)
+AIC(reason.model.2) # lower = good
+
+summary(reason.model.2)
+r.squaredGLMM(reason.model.2)
+```
+
+```{r}
+treason <- as.data.frame(table(DF$j_reason_combined, DF$j_cond, DF$j_expertise))
+
+colnames(treason) <- c("reasonable_attribution", "j_condition", "Expertise", "Frequency")
+treason$Expertise <- factor(treason$Expertise,
+                          levels = c("naive", "expert"),
+                          labels = c("Naive", "Expert"))
+
+treason %>% 
+  ggplot(aes(fill = reasonable_attribution, y = Frequency, x = Expertise)) +
+  labs("Figure X. Rates of Reasonable Attribution by Condition and Expertise", fill="reasonable_attribution") +
+  geom_bar(position="fill", stat = "identity") +
+  scale_y_continuous(labels=scales::percent) +
+  ylab("Percentage Respondents") +
+  scale_fill_grey(name = "Reasonable Attribution", start = .9, end=0, labels = c("Reasonable", "Unreasonable")) +
+  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
+  facet_wrap(~j_condition)  
+```
+
+### Luck Bin Analysis 
+
+```{r}
+DF$j_luck_combined <- factor(DF$j_luck_combined)
+luck.model.1 <- glmer(j_luck_combined ~ (1 | person_code),
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+luck.model.2 <- glmer(j_luck_combined ~ (1 | person_code) + j_cond*j_expertise,
+                    data = DF, 
+                    family = binomial,
+                    na.action = "na.omit")
+
+AIC(luck.model.1)
+AIC(luck.model.2) # lower = good
+
+summary(luck.model.2)
+r.squaredGLMM(luck.model.2)
+```
+
+```{r}
+tluck <- as.data.frame(table(DF$j_luck_combined, DF$j_cond, DF$j_expertise))
+
+colnames(tluck) <- c("luck_attribution", "j_condition", "Expertise", "Frequency")
 tluck$Expertise <- factor(tluck$Expertise,
                           levels = c("naive", "expert"),
                           labels = c("Naive", "Expert"))
@@ -235,7 +516,7 @@ tluck %>%
   geom_bar(position="fill", stat = "identity") +
   scale_y_continuous(labels=scales::percent) +
   ylab("Percentage Respondents") +
-  scale_fill_grey(name = "Inability/Luck Attribution", start = .9, end=0, labels = c("Inability", "Luck")) +
+  scale_fill_grey(name = "Ability/Luck Attribution", start = .9, end=0, labels = c("Ability", "Luck")) +
   theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
-  facet_wrap(~Condition)  
+  facet_wrap(~j_condition)  
 ```
