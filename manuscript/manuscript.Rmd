@@ -81,7 +81,7 @@ knitr::opts_chunk$set(cache.extra = knitr::rand_seed, echo = FALSE, include = FA
 
 ```{r}
 # import data 
-load("full_long.Rdata")
+load("../data/full_long.Rdata")
 
 full_long <- full_long %>% 
   filter(!is.na(j_cond)) %>% 

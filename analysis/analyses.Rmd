@@ -33,7 +33,7 @@ library(dplyr)
 The `full_long` dataset includes all participants in long format - wherein each trial of their study is on one row of the dataset. This data has been merged with other relevant variables from the ACREP Turri Project found here: https://github.com/doomlab/CREP_Turri 
 
 ```{r}
-load("full_long.Rdata")
+load("../data/full_long.Rdata")
 ```
 
 ## Data Screening
