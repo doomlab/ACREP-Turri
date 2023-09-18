@@ -2,27 +2,114 @@
 title             : "The title"
 shorttitle        : "Title"
 
-author: 
-  - name          : "First Author"
-    affiliation   : "1"
-    corresponding : yes    # Define only one corresponding author
-    address       : "Postal address"
-    email         : "my@email.com"
-    role: # Contributorship roles (e.g., CRediT, https://credit.niso.org/)
-      - "Conceptualization"
-      - "Writing - Original Draft Preparation"
-      - "Writing - Review & Editing"
-  - name          : "Ernst-August Doelle"
-    affiliation   : "1,2"
+author:
+  - name: Kaitlyn Larkin
+    affiliation: '1'
     role:
-      - "Writing - Review & Editing"
-      - "Supervision"
+      - Conceptualization
+      - Investigation
+      - Methodology
+      - Project administration
+      - Writing - original draft
+      - Writing - review & editing
+    email: kaitlynalarkin@outlook.com
+  - name: Michael R. Andreychik
+    affiliation: '1'
+    role:
+      - Conceptualization
+      - Investigation
+      - Methodology
+      - Project administration
+      - Supervision
+      - Writing - original draft
+      - Writing - review & editing
+    corresponding: yes
+    email: mandreychik@fairfield.edu
+    address: Enter postal address here
+  - name: Sophia Weissgerber
+    affiliation: '2'
+    role:
+      - Investigation
+      - Software
+      - Supervision
+      - Writing - review & editing
+    email: scweissgerber@uni-kassel.de
+  - name: Felix Kiunke
+    affiliation: '2'
+    role:
+      - Data curation
+      - Investigation
+      - Software
+      - Writing - review & editing
+    email: mail@fkiunke.de
+  - name: Hendrik Godbersen
+    affiliation: '3'
+    role:
+      - Investigation
+      - Writing - review & editing
+    email: hendrik.godbersen@fom.de
+  - name: Caroline Kolle
+    affiliation: '2'
+    role:
+      - Investigation
+      - Writing - review & editing
+    email: Caroline.Kolle@gmx.de
+  - name: Anna Kulpe
+    affiliation: '2'
+    role:
+      - Investigation
+      - Writing - review & editing
+    email: anna.kulpe@web.de
+  - name: Susana Ruiz-Fernandez
+    affiliation: '4,8'
+    role:
+      - Investigation
+      - Supervision
+      - Writing - review & editing
+    email: susana.ruiz-fernandez@psychology-research.de
+  - name: Kaitlyn M. Werner
+    affiliation: '5'
+    role:
+      - Investigation
+      - Supervision
+      - Writing - review & editing
+    email: kaitlyn.werner@utoronto.ca
+  - name: Raymond Wu
+    affiliation: '6'
+    role:
+      - Investigation
+      - Writing - review & editing
+    email: rwu@psych.ubc.ca
+  - name: Erin M. Buchanan
+    affiliation: '7'
+    role:
+      - Data curation
+      - Formal analysis
+      - Software
+      - Validation
+      - Visualization
+      - Writing - original draft
+      - Writing - review & editing
+    email: ebuchanan@harrisburgu.edu
 
 affiliation:
-  - id            : "1"
-    institution   : "Wilhelm-Wundt-University"
-  - id            : "2"
-    institution   : "Konstanz Business School"
+  - id: '1'
+    institution: Fairfield University
+  - id: '2'
+    institution: University of Kassel
+  - id: '3'
+    institution: FOM University of Applied Sciences, Essen, Germany
+  - id: '4'
+    institution: Brandenburg University of Technology, Cottbus-Senftenberg, Germany
+  - id: '5'
+    institution: University of Toronto
+  - id: '6'
+    institution: University of British Columbia
+  - id: '7'
+    institution: Harrisburg University of Science and Technology
+  - id: '8'
+    institution: FOM University of Applied Sciences, Essen; Leibniz Institut für Wissensmedien,
+      Tübingen, Germany
 
 authornote: |
   Add complete departmental affiliations for each author here. Each new line herein must be indented, like this line.
