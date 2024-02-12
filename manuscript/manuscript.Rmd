@@ -280,6 +280,8 @@ ggplot(DF, aes(j_cond, j_know_vas, color = j_expertise, fill = j_expertise)) +
   theme_classic() + 
   scale_fill_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey")) + 
   scale_color_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey"))
+
+ggsave("figures/figure_1.png", dpi = 300)
 ```
 
 ### Reasonable VAS Analysis
@@ -343,6 +345,8 @@ ggplot(DF, aes(j_cond, j_reason_vas, color = j_expertise, fill = j_expertise)) +
   theme_classic() + 
   scale_fill_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey")) + 
   scale_color_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey"))
+
+ggsave("figures/figure_2.png", dpi = 300)
 ```
 
 ### Luck VAS Analysis 
@@ -406,6 +410,8 @@ ggplot(DF, aes(j_cond, j_luck_vas, color = j_expertise, fill = j_expertise)) +
   theme_classic() + 
   scale_fill_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey")) + 
   scale_color_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey"))
+
+ggsave("figures/figure_3.png", dpi = 300)
 ```
 
 ## Forced Choice
@@ -473,6 +479,8 @@ tknow %>%
   scale_fill_grey(name = "Knowledge Attribution", start = .9, end=0, labels = c("Knows", "Believes")) +
   theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
   facet_wrap(~j_condition)  
+
+ggsave("figures/figure_4.png", dpi = 300)
 ```
 
 ### Luck Bin Analysis 
@@ -535,6 +543,8 @@ tluck %>%
   scale_fill_grey(name = "Ability/Luck Attribution", start = .9, end=0, labels = c("Luck", "Ability")) +
   theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
   facet_wrap(~j_condition)  
+
+ggsave("figures/figure_5.png", dpi = 300)
 ```
 
 ## Combined Analyses
@@ -650,6 +660,8 @@ tknow %>%
   scale_fill_grey(name = "Knowledge Attribution", start = .9, end=0, labels = c("Believes", "Knows")) +
   theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
   facet_wrap(~j_condition)  
+
+ggsave("figures/figure_6.png", dpi = 300)
 ```
 
 ### Reasonable Bin Analysis 
@@ -692,6 +704,8 @@ treason %>%
   scale_fill_grey(name = "Reasonable Attribution", start = .9, end=0, labels = c("Reasonable", "Unreasonable")) +
   theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
   facet_wrap(~j_condition)  
+
+ggsave("figures/figure_7.png", dpi = 300)
 ```
 
 ### Luck Bin Analysis 
@@ -755,6 +769,8 @@ tluck %>%
   scale_fill_grey(name = "Ability/Luck Attribution", start = .9, end=0, labels = c("Ability", "Luck")) +
   theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
   facet_wrap(~j_condition)  
+
+ggsave("figures/figure_8.png", dpi = 300)
 ```
 
 # Discussion
