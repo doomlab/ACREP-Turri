@@ -275,7 +275,7 @@ ggplot(DF, aes(j_cond, j_know_vas, color = j_expertise, fill = j_expertise)) +
                position = position_dodge(width = 0.90),
                width = .2, 
                color = "black") +
-  xlab("Vignette Condition") + 
+  xlab("Belief Condition") + 
   ylab("Knowledge Visual Analog Scale") + 
   theme_classic() + 
   scale_fill_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey")) + 
@@ -340,7 +340,7 @@ ggplot(DF, aes(j_cond, j_reason_vas, color = j_expertise, fill = j_expertise)) +
                position = position_dodge(width = 0.90),
                width = .2, 
                color = "black") +
-  xlab("Condition") + 
+  xlab("Belief Condition") + 
   ylab("Reasonable Visual Analog Scale") + 
   theme_classic() + 
   scale_fill_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey")) + 
@@ -405,7 +405,7 @@ ggplot(DF, aes(j_cond, j_luck_vas, color = j_expertise, fill = j_expertise)) +
                position = position_dodge(width = 0.90),
                width = .2, 
                color = "black") +
-  xlab("Condition") + 
+  xlab("Belief Condition") + 
   ylab("Luck Visual Analog Scale") + 
   theme_classic() + 
   scale_fill_manual(name = "Expertise", labels = c("Naive", "Expert"), values = c("darkgrey", "lightgrey")) + 
@@ -477,7 +477,7 @@ tknow %>%
   scale_y_continuous(labels=scales::percent) +
   ylab("Percentage Respondents") +
   scale_fill_grey(name = "Knowledge Attribution", start = .9, end=0, labels = c("Knows", "Believes")) +
-  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
+  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=.5)) + 
   facet_wrap(~j_condition)  
 
 ggsave("figures/figure_4.png", dpi = 300)
@@ -541,7 +541,7 @@ tluck %>%
   scale_y_continuous(labels=scales::percent) +
   ylab("Percentage Respondents") +
   scale_fill_grey(name = "Ability/Luck Attribution", start = .9, end=0, labels = c("Luck", "Ability")) +
-  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
+  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=.5)) + 
   facet_wrap(~j_condition)  
 
 ggsave("figures/figure_5.png", dpi = 300)
@@ -658,7 +658,7 @@ tknow %>%
   scale_y_continuous(labels=scales::percent) +
   ylab("Percentage Respondents") +
   scale_fill_grey(name = "Knowledge Attribution", start = .9, end=0, labels = c("Believes", "Knows")) +
-  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
+  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=0.5)) + 
   facet_wrap(~j_condition)  
 
 ggsave("figures/figure_6.png", dpi = 300)
@@ -702,7 +702,7 @@ treason %>%
   scale_y_continuous(labels=scales::percent) +
   ylab("Percentage Respondents") +
   scale_fill_grey(name = "Reasonable Attribution", start = .9, end=0, labels = c("Reasonable", "Unreasonable")) +
-  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
+  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=.5)) + 
   facet_wrap(~j_condition)  
 
 ggsave("figures/figure_7.png", dpi = 300)
@@ -767,7 +767,7 @@ tluck %>%
   scale_y_continuous(labels=scales::percent) +
   ylab("Percentage Respondents") +
   scale_fill_grey(name = "Ability/Luck Attribution", start = .9, end=0, labels = c("Ability", "Luck")) +
-  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1)) + 
+  theme_bw()+theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=.5)) + 
   facet_wrap(~j_condition)  
 
 ggsave("figures/figure_8.png", dpi = 300)
